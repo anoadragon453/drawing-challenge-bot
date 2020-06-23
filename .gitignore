@@ -1,0 +1,29 @@
+# PyCharm
+.idea/
+
+# Python virtualenv environment folders
+venv/
+env/
+env3/
+.env/
+
+# Bot local files
+*.db
+
+# Config file
+config.yaml
+
+# Python
+__pycache__/
+
+# Log files
+*.log
+
+# Default docker volume location
+data/
+
+# Default bot store directory
+store/
+
+# Python egg directories
+*.egg-info/

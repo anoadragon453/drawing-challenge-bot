@@ -1,0 +1,16 @@
+[Unit]
+Description=A matrix bot to post weekly /r/MLPDrawingSchool challenges
+
+[Service]
+Type=simple
+User=drawing-challenge-bot
+Group=drawing-challenge-bot
+WorkingDirectory=/path/to/drawing-challenge-bot/docker
+ExecStart=/usr/bin/docker-compose up drawing-challenge-bot
+ExecStop=/usr/bin/docker-compose stop drawing-challenge-bot
+RemainAfterExit=yes
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
