@@ -61,7 +61,7 @@ class Config(object):
             logger.addHandler(handler)
 
         # Storage setup
-        database_path = self._get_cfg(["storage", "database"], required=True)
+        database_path = self._get_cfg(["storage", "database"])
 
         # We support both SQLite and Postgres backends
         # Determine which one the user intends
@@ -89,16 +89,16 @@ class Config(object):
                 )
 
         # Matrix bot account setup
-        self.user_id = self._get_cfg(["matrix", "user_id"], required=True)
+        self.user_id = self._get_cfg(["matrix", "user_id"])
         if not re.match("@.*:.*", self.user_id):
             raise ConfigError("matrix.user_id must be in the form @name:domain")
 
-        self.user_password = self._get_cfg(["matrix", "user_password"], required=True)
+        self.user_password = self._get_cfg(["matrix", "user_password"])
         self.device_id = self._get_cfg(["matrix", "device_id"], required=True)
         self.device_name = self._get_cfg(
             ["matrix", "device_name"], default="nio-template"
         )
-        self.homeserver_url = self._get_cfg(["matrix", "homeserver_url"], required=True)
+        self.homeserver_url = self._get_cfg(["matrix", "homeserver_url"])
 
         self.command_prefix = self._get_cfg(["command_prefix"], default="!c")
 
