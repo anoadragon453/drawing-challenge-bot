@@ -75,12 +75,15 @@ class ChallengePoster:
 
     async def _post_challenge(self, room_id: str, challenge: Submission):
         """Post a given challenge to a given room"""
+        # Replace single newlines with double newlines for Matrix
+        selftext = challenge.selftext.replace("\n", "\n\n")
+
         text = f"""
 **New Art Challenge!**
 
 *{challenge.title}*
 
-{challenge.selftext}
+{selftext}
 
 [Link to original post]({challenge.url})"""
 
