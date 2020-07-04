@@ -68,7 +68,10 @@ class ChallengePoster:
             # (and it's been at least 1 week since our last post in the room)
             # then post that challenge!
             for challenge in challenges:
-                if last_post_timestamp and challenge.created_utc <= last_post_reddit_timestamp:
+                if (
+                    last_post_timestamp
+                    and challenge.created_utc <= last_post_reddit_timestamp
+                ):
                     # We've already posted this one
                     continue
 

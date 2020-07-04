@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional, Union
 
-from praw.reddit import Submission, Reddit
+from praw.reddit import Reddit, Submission
 
 from drawing_challenge_bot.config import Config
 
@@ -153,9 +153,12 @@ class Storage(object):
                 post = self.reddit.submission(id=post_id)
 
                 # Save the creation timestamp
-                self._execute("""
+                self._execute(
+                    """
                     UPDATE room_post SET reddit_posted_timestamp = ? WHERE last_challenge_id = ?
-                """, (post.created_utc, post_id))
+                """,
+                    (post.created_utc, post_id),
+                )
 
             self._execute(
                 """
