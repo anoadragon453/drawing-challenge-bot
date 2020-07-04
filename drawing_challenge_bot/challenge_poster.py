@@ -49,7 +49,10 @@ class ChallengePoster:
         logger.debug("Updating rooms...")
 
         for room_id, last_challenge_dict in rooms.items():
+            logger.debug("Checking room %s: %s", room_id, last_challenge_dict)
+
             last_post_timestamp = last_challenge_dict["posted_timestamp"]
+            last_post_reddit_timestamp = last_challenge_dict["reddit_posted_timestamp"]
 
             if (
                 last_post_timestamp is not None
@@ -58,12 +61,14 @@ class ChallengePoster:
                 # It hasn't been a week since we last posted in this room. Skip this room
                 continue
 
+            logger.debug("Time to post again in %s!", room_id)
+
             # Iterate through each challenge in order of date
             # Once we find a post that's newer than our last post
             # (and it's been at least 1 week since our last post in the room)
             # then post that challenge!
             for challenge in challenges:
-                if last_post_timestamp and challenge.created_utc <= last_post_timestamp:
+                if last_post_timestamp and challenge.created_utc <= last_post_reddit_timestamp:
                     # We've already posted this one
                     continue
 

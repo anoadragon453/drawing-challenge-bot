@@ -2,17 +2,17 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional, Union
 
-from praw.reddit import Submission
+from praw.reddit import Submission, Reddit
 
 from drawing_challenge_bot.config import Config
 
-latest_migration_version = 0
+latest_migration_version = 1
 
 logger = logging.getLogger(__name__)
 
 
 class Storage(object):
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, reddit: Reddit):
         """Setup the database
 
         Runs an initial setup or migrations depending on whether a database file has already
@@ -25,8 +25,10 @@ class Storage(object):
                     * connection_string: A string, featuring a connection string that
                         be fed to each respective db library's `connect` method
         """
-        # Check which type of database has been configured
         self.config = config
+        self.reddit = reddit
+
+        # Check which type of database has been configured
         self.conn = self._get_database_connection(
             config.database["type"], config.database["connection_string"]
         )
@@ -123,18 +125,61 @@ class Storage(object):
         """
         logger.debug("Checking for necessary database migrations...")
 
-    def get_rooms(self) -> Dict[str, Dict[str, Union[str, int]]]:
+        if current_migration_version < 1:
+            logger.info("Migrating the database from v0 to v1...")
+
+            # There was a bug that preventing any challenges other than the first from being
+            # posted.
+            # https://github.com/anoadragon453/drawing-challenge-bot/issues/1
+            self._execute(
+                """
+                ALTER TABLE room_post
+                ADD COLUMN
+                reddit_posted_timestamp BIGINT
+            """
+            )
+
+            # Get the date of when each post in the database was created on reddit
+            self._execute(
+                """
+                SELECT last_challenge_id FROM room_post
+                """
+            )
+            post_ids = [row[0] for row in self.cursor.fetchall()]
+
+            # Deduplicate post IDs and iterate through each
+            for post_id in set(post_ids):
+                # Lookup the post
+                post = self.reddit.submission(id=post_id)
+
+                # Save the creation timestamp
+                self._execute("""
+                    UPDATE room_post SET reddit_posted_timestamp = ? WHERE last_challenge_id = ?
+                """, (post.created_utc, post_id))
+
+            self._execute(
+                """
+                 UPDATE migration_version SET version = 1
+            """
+            )
+            logger.info("Database migrated to v1")
+
+    def get_rooms(self) -> Dict[str, Dict[str, Union[str, int, int]]]:
         """Get the last post information for each known room"""
         self._execute(
             """
-            SELECT room_id, last_challenge_id, posted_timestamp
+            SELECT room_id, last_challenge_id, posted_timestamp, reddit_posted_timestamp
             FROM room_post
         """
         )
 
         # Return dictionary of room_id to challenge information
         return {
-            row[0]: {"last_challenge_id": row[1], "posted_timestamp": row[2]}
+            row[0]: {
+                "last_challenge_id": row[1],
+                "posted_timestamp": row[2],
+                "reddit_posted_timestamp": row[3],
+            }
             for row in self.cursor.fetchall()
         }
 
@@ -151,24 +196,28 @@ class Storage(object):
         """
         last_challenge_id = challenge.id if challenge else None
         posted_timestamp = datetime.utcnow().timestamp() if challenge else None
+        reddit_posted_timestamp = challenge.created_utc if challenge else None
 
         self._execute(
             """
             INSERT INTO room_post
-                (room_id, last_challenge_id, posted_timestamp)
-                VALUES (?, ?, ?)
+                (room_id, last_challenge_id, posted_timestamp, reddit_posted_timestamp)
+                VALUES (?, ?, ?, ?)
             ON CONFLICT(room_id) DO
                 UPDATE SET
                     last_challenge_id = ?,
-                    posted_timestamp = ?
+                    posted_timestamp = ?,
+                    reddit_posted_timestamp = ?
                 WHERE room_id = ?
         """,
             (
                 room_id,
                 last_challenge_id,
                 posted_timestamp,
+                reddit_posted_timestamp,
                 last_challenge_id,
                 posted_timestamp,
+                reddit_posted_timestamp,
                 room_id,
             ),
         )

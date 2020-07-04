@@ -39,8 +39,15 @@ async def main():
         config_filepath = "config.yaml"
     config = Config(config_filepath)
 
+    # Set up reddit API
+    reddit = praw.Reddit(
+        client_id=config.client_id,
+        client_secret=config.client_secret,
+        user_agent=config.user_agent,
+    )
+
     # Configure storage
-    store = Storage(config)
+    store = Storage(config, reddit)
 
     # Configuration options for the AsyncClient
     client_config = AsyncClientConfig(
@@ -67,13 +74,6 @@ async def main():
 
     # Set up a scheduler
     scheduler = AsyncIOScheduler()
-
-    # Set up reddit API
-    reddit = praw.Reddit(
-        client_id=config.client_id,
-        client_secret=config.client_secret,
-        user_agent=config.user_agent,
-    )
 
     # Set up a challenge poster
     challenge_poster = ChallengePoster(client, config, store, reddit)
