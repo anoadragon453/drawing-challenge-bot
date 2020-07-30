@@ -69,7 +69,7 @@ class ChallengePoster:
             # then post that challenge!
             for challenge in challenges:
                 if (
-                    last_post_timestamp
+                    last_post_timestamp is not None
                     and challenge.created_utc <= last_post_reddit_timestamp
                 ):
                     # We've already posted this one
